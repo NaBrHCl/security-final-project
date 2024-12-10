@@ -88,13 +88,12 @@ def validate_file(file_argument_name: str, required: bool = True) -> str | None:
 
 
 def encrypt(input_file: str, key_file: str, output_file: Optional[str]):
-
     # read plaintext from the input file
-    with open(input_file, 'r') as infile:
+    with open(input_file, 'r', encoding='utf-8') as infile:
         plaintext = infile.read()
 
     # we load transformations from the key file
-    with open(key_file, 'r') as keyfile:
+    with open(key_file, 'r', encoding='utf-8') as keyfile:
         transformations = json.load(keyfile)
 
     ciphertext = plaintext
@@ -113,19 +112,18 @@ def encrypt(input_file: str, key_file: str, output_file: Optional[str]):
 
     # write the ciphertext to the output file or print to console
     if output_file:
-        with open(output_file, 'w') as outfile:
+        with open(output_file, 'w', encoding='utf-8') as outfile:
             outfile.write(ciphertext)
     else:
         print(ciphertext)
 
 
 def decrypt(input_file: str, key_file: str, output_file: Optional[str]):
-
     # open the input file and read the ciphertext
-    with open(input_file, 'r') as infile:
+    with open(input_file, 'r', encoding='utf-8') as infile:
         ciphertext = infile.read()
 
-    with open(key_file, 'r') as keyfile:
+    with open(key_file, 'r', encoding='utf-8') as keyfile:
         transformations = json.load(keyfile)
 
     plaintext = ciphertext
@@ -143,7 +141,7 @@ def decrypt(input_file: str, key_file: str, output_file: Optional[str]):
 
     # write the plaintext to the output file or print it
     if output_file:
-        with open(output_file, 'w') as outfile:
+        with open(output_file, 'w', encoding='utf-8') as outfile:
             outfile.write(plaintext)
     else:
         print(plaintext)
@@ -153,14 +151,16 @@ def reverse_encrypt(text: str) -> str:
     return text[::-1]
 
 
+CHAR_COUNT = 0xD7FF
+
+
 def caesar_encrypt(text: str, shift: int) -> str:
-    result = ""
+    result = ''
+
     for char in text:
-        if char.isalpha():
-            base = ord('A') if char.isupper() else ord('a')
-            result += chr((ord(char) - base + shift) % 26 + base)
-        else:
-            result += char
+        new_unicode = (ord(char) + shift) % CHAR_COUNT
+        result += chr(new_unicode)
+
     return result
 
 
@@ -169,34 +169,30 @@ def caesar_decrypt(text: str, shift: int) -> str:
 
 
 def vigenere_encrypt(text: str, key: str) -> str:
-    key = key.lower()
     key_index = 0
-    result = ""
+    result = ''
 
     for char in text:
-        if char.isalpha():
-            base = ord('A') if char.isupper() else ord('a')
-            shift = ord(key[key_index % len(key)]) - ord('a')
-            result += chr((ord(char) - base + shift) % 26 + base)
-            key_index += 1
-        else:
-            result += char
+        shift = ord(key[key_index])
+
+        new_unicode = (ord(char) + shift) % CHAR_COUNT
+        result += chr(new_unicode)
+        key_index = (key_index + 1) % len(key)
+
     return result
 
 
 def vigenere_decrypt(text: str, key: str) -> str:
-    key = key.lower()
     key_index = 0
-    result = ""
+    result = ''
 
     for char in text:
-        if char.isalpha():
-            base = ord('A') if char.isupper() else ord('a')
-            shift = ord(key[key_index % len(key)]) - ord('a')
-            result += chr((ord(char) - base - shift) % 26 + base)
-            key_index += 1
-        else:
-            result += char
+        shift = -ord(key[key_index])
+
+        new_unicode = (ord(char) + shift) % CHAR_COUNT
+        result += chr(new_unicode)
+        key_index = (key_index + 1) % len(key)
+
     return result
 
 
@@ -204,7 +200,7 @@ def generate_key(output_file: str):
     file: Optional[TextIO] = None
 
     try:
-        file = open(output_file, 'w')
+        file = open(output_file, 'w', encoding='utf-8')
     except OSError:
         parser.error(f'cannot write to \'{output_file}\'')
 

@@ -9,7 +9,9 @@ flowchart TB
 A[Start] --> B{Mode}
 B -->|Encrypt| C[Read Key]
 B -->|Decrypt| C
-C --> D[Process Input File]
-D --> E[Apply Encryption / Decryption Algorithms]
-E --> F[Generate Output File]
+B -->|Generate Key| D[Read User Input]
+C --> E[Process Input File]
+E --> F[Apply Encryption / Decryption Algorithms]
+D --> G[Generate Output File]
+F --> G
 ```

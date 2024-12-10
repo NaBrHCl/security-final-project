@@ -1,0 +1,18 @@
+[
+    {
+        "type": "reverse",
+        "key": null
+    },
+    {
+        "type": "caesar",
+        "key": 3
+    },
+    {
+        "type": "reverse",
+        "key": null
+    },
+    {
+        "type": "vigenere",
+        "key": "something"
+    }
+]

@@ -56,14 +56,14 @@ def main():
         case Mode.ENCRYPT:
             input_file: str = validate_file('input')
             key_file: str = validate_file('key')
-            output_file: Optional[str] = validate_file('output', False)
+            output_file: Optional[str] = args.output
 
             encrypt(input_file, key_file, output_file)
 
         case Mode.DECRYPT:
             input_file: str = validate_file('input')
             key_file: str = validate_file('key')
-            output_file: Optional[str] = validate_file('output', False)
+            output_file: Optional[str] = args.output
 
             decrypt(input_file, key_file, output_file)
 
@@ -87,12 +87,117 @@ def validate_file(file_argument_name: str, required: bool = True) -> str | None:
     return getattr(args, file_argument_name)
 
 
-def encrypt(input_file: str, key: str, output_file: str):
-    print('encrypt endpoint')
+def encrypt(input_file: str, key_file: str, output_file: Optional[str]):
+
+    # read plaintext from the input file
+    with open(input_file, 'r') as infile:
+        plaintext = infile.read()
+
+    # we load transformations from the key file
+    with open(key_file, 'r') as keyfile:
+        transformations = json.load(keyfile)
+
+    ciphertext = plaintext
+
+    # apply each transformation in sequence
+    for transformation in transformations:
+        match transformation['type']:
+            case 'caesar':
+                key = int(transformation['key'])
+                ciphertext = caesar_encrypt(ciphertext, key)
+            case 'reverse':
+                ciphertext = reverse_encrypt(ciphertext)
+            case 'vigenere':
+                key = transformation['key']
+                ciphertext = vigenere_encrypt(ciphertext, key)
+
+    # write the ciphertext to the output file or print to console
+    if output_file:
+        with open(output_file, 'w') as outfile:
+            outfile.write(ciphertext)
+    else:
+        print(ciphertext)
 
 
-def decrypt(input_file: str, key: str, output_file: str):
-    print('decrypt endpoint')
+def decrypt(input_file: str, key_file: str, output_file: Optional[str]):
+
+    # open the input file and read the ciphertext
+    with open(input_file, 'r') as infile:
+        ciphertext = infile.read()
+
+    with open(key_file, 'r') as keyfile:
+        transformations = json.load(keyfile)
+
+    plaintext = ciphertext
+
+    for transformation in reversed(transformations):
+        match transformation['type']:
+            case 'caesar':
+                key = int(transformation['key'])
+                plaintext = caesar_decrypt(plaintext, key)
+            case 'reverse':
+                plaintext = reverse_encrypt(plaintext)
+            case 'vigenere':
+                key = transformation['key']
+                plaintext = vigenere_decrypt(plaintext, key)
+
+    # write the plaintext to the output file or print it
+    if output_file:
+        with open(output_file, 'w') as outfile:
+            outfile.write(plaintext)
+    else:
+        print(plaintext)
+
+
+def reverse_encrypt(text: str) -> str:
+    return text[::-1]
+
+
+def caesar_encrypt(text: str, shift: int) -> str:
+    result = ""
+    for char in text:
+        if char.isalpha():
+            base = ord('A') if char.isupper() else ord('a')
+            result += chr((ord(char) - base + shift) % 26 + base)
+        else:
+            result += char
+    return result
+
+
+def caesar_decrypt(text: str, shift: int) -> str:
+    return caesar_encrypt(text, -shift)
+
+
+def vigenere_encrypt(text: str, key: str) -> str:
+    key = key.lower()
+    key_index = 0
+    result = ""
+
+    for char in text:
+        if char.isalpha():
+            base = ord('A') if char.isupper() else ord('a')
+            shift = ord(key[key_index % len(key)]) - ord('a')
+            result += chr((ord(char) - base + shift) % 26 + base)
+            key_index += 1
+        else:
+            result += char
+    return result
+
+
+def vigenere_decrypt(text: str, key: str) -> str:
+    key = key.lower()
+    key_index = 0
+    result = ""
+
+    for char in text:
+        if char.isalpha():
+            base = ord('A') if char.isupper() else ord('a')
+            shift = ord(key[key_index % len(key)]) - ord('a')
+            result += chr((ord(char) - base - shift) % 26 + base)
+            key_index += 1
+        else:
+            result += char
+    return result
 
 
 def generate_key(output_file: str):
